@@ -9,3 +9,4 @@ MS윈도, MacOSX(x86), MacOSX(arm64) 등에 대해 빌드되는걸 확인 했습
 
 자세한 빌드옵션은 Makefile을 확인 바랍니다.
 
+![모두의자막](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FeDSqBP%2FbtqBD1QDFf9%2FAgF7CKdVmXp0drcKvkvT61%2Fimg.png)
