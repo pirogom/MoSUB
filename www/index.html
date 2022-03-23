@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="kr">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Cache-Control" content="no-cache">
+  <meta http-equiv="Expires" content="-1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>모두의 자막</title>
+
+  <link rel="stylesheet" href="/spectre.min.css">
+  <link rel="stylesheet" href="/spectre-exp.min.css">
+  <link rel="stylesheet" href="/spectre-icons.min.css">
+
+  <style>
+    .sub_table {
+      border: 0px;
+      width: 900px;
+      background-color: #e3e3e3;
+      padding: 3px;
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    .sub_td1 {
+      background-color: #eeeeee;
+      text-align: center;
+      width: 100px;
+    }
+
+    .sub_td2 {
+      background-color: white;
+      text-align: left;
+      padding: 5px;
+      width: 760px;
+    }
+
+    .sub_td3 {
+      background-color: white;
+      text-align: center;
+      width: 40px;
+      cursor: pointer;
+    }
+
+    .sub_input {
+      width: 100%;
+    }
+
+    .green_text {
+      color: #00c73c;
+      font-weight: bold;
+    }
+
+    .violet_text {
+      color: #b22af8;
+      font-weight: bold;
+    }
+
+    .blue_text {
+      color: #32abea;
+      font-weight: bold;
+
+    }
+
+    .red_text {
+      color: #ff5757;
+      font-weight: bold;
+    }
+
+    .work_type_div {
+      margin-top: 5px;
+      margin-bottom: 5px;
+      border: 1px solid silver;
+      border-radius: 0.2rem;
+    }
+
+    .title_div {
+      width: 100%;
+      margin-bottom: 5px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: left;
+    }
+  </style>
+
+
+
+
+  <script src='/jquery.js'></script>
+
+
+  <script>
+
+    // Jquery Ajax Casche
+    $.ajaxSetup({
+      cache: false
+    });
+
+    var localPort = "30999";
+    var txtBlockInterval = null;
+    var subCnt = 0;
+
+    /**
+    * openWin
+    **/
+    function openWin(url) {
+      window.open(url, "_blank");
+    }
+
+    /**
+    * copyTxt
+    **/
+    function copyTxt(from, to) {
+      $('#' + to).val($('#' + from).text());
+    }
+
+    /**
+    * replaceAll
+    **/
+    String.prototype.replaceAll = function (org, dest) {
+      return this.split(org).join(dest);
+    }
+
+    /**
+    * onLoadFileChange
+    **/
+    function onLoadFileChange() {
+
+      $('#save-file-div').css("display", "none");
+      $('#upluad-pre-process').css("display", "block");
+
+      if ($('#upload-xml-file').val().length == 0) {
+        return;
+      }
+
+      var formData = new FormData();
+      var fname = $("#upload-xml-file")[0].files[0].name;
+      var resfName = fname + ".tmp";
+      formData.append("uploadFile", $("#upload-xml-file")[0].files[0]);
+      formData.append("workType", getWorkType());
+
+      $('#upload-xml-file').attr('disabled', true);
+      $('input:radio[id="work-type"]').attr('disabled', true);
+
+      $.ajax({
+        type: "POST",
+        data: formData,
+        dataType: 'json',
+        processData: false,
+        contentType: false,
+        url: "http://127.0.0.1:" + localPort + "/uploadXML",
+        success: function (res) {
+          result = res;//JSON.parse(res);
+          if (parseInt(result["TXTCNT"]) > 0) {
+            if (txtBlockInterval != null) {
+              clearInterval(txtBlockInterval);
+            }
+
+            $('#upluad-pre-process').css("display", "none");
+
+            $('#on-progress-msg').html("총 " + result["TXTCNT"] + "개의 자막을 처리중입니다.. 잠시만 기다려주십시요..");
+            $('#on-progress-msg').css('display', 'block');
+
+            txtBlockInterval = setInterval(function () {
+              var getData = {
+                resfile: resfName
+              }
+              //
+              $.ajax({
+                type: "GET",
+                data: getData,
+                url: "http://127.0.0.1:" + localPort + "/getResult",
+                success: function (res) {
+
+                  if (res.length == 0) {
+                    //                        alert("결과 값이 없습니다")
+                  } else {
+                    $('#on-progress-msg').css('display', 'none');
+                    clearInterval(txtBlockInterval);
+                    txtBlockInterval = null;
+
+                    result = JSON.parse(res);
+
+                    var html = "";
+
+                    subCnt = 0;
+                    for (var i = 0; i < Object.keys(result).length; i++) {
+
+                      var origTxtID = "sub-orig-" + i;
+                      var checkedTxtID = "sub-checked-" + i;
+                      var editTxtID = "sub-edit-" + i;
+
+                      html += "<table class='sub_table'>";
+                      html += "<tr>";
+                      html += "<td class='sub_td1'>원문</td>";
+                      html += "<td class='sub_td2' id='" + origTxtID + "'>" + result[i].origin_html + "</td>";
+                      html += "<td class='sub_td3' onclick='copyTxt(\"" + origTxtID + "\", \"" + editTxtID + "\");'>√</td>";
+                      html += "</tr>";
+                      html += "<td class='sub_td1'>교정문</td>";
+                      html += "<td class='sub_td2' id='" + checkedTxtID + "'>" + result[i].html + "</td class='sub_td2'>";
+                      html += "<td class='sub_td3' onclick='copyTxt(\"" + checkedTxtID + "\", \"" + editTxtID + "\");'>√</td>";
+                      html += "</tr>";
+                      html += "<tr>";
+                      html += "<td class='sub_td1'>수정</td>";
+                      html += "<td class='sub_td2' colspan=2><input id='" + editTxtID + "' class='sub_input' type=text></td class='sub_td2'>";
+                      html += "</tr>";
+                      html += "</table>";
+                      subCnt++;
+                    }
+
+                    $('#subs-div').html(html);
+
+                    for (var i = 0; i < Object.keys(result).length; i++) {
+                      var editTxtID = "sub-edit-" + i;
+                      var tmpDiv = $('<div></div>');
+                      tmpDiv.html(result[i].html);
+                      $('#' + editTxtID).val(tmpDiv.text());
+
+                      $('#' + editTxtID).keyup(function (key) {
+
+                        if (key.keyCode == 13) {
+
+                          var input = $(this).get(0);
+
+                          if (input) {
+                            if ('selectionStart' in input) {
+                              //↵
+
+                              var oldcaret = input.selectionStart;
+                              oldTxt = $(this).val();
+                              headTxt = oldTxt.substring(0, input.selectionStart);
+                              tailTxt = oldTxt.substring(input.selectionStart, oldTxt.length);
+
+                              $(this).val(headTxt + '↵' + tailTxt);
+                              input.selectionStart = oldcaret + 1;
+                              input.selectionEnd = oldcaret + 1;
+                            }
+                          }
+                        }
+                      });
+                    }
+                  }
+                },
+                error: function () {
+                }
+              });
+              //
+            }, 1000);
+          } else {
+            alert("맞춤법 검사를할 데이터가 존재하지 않습니다. 올바른 파일인지 확인바랍니다.");
+            newWork();
+          }
+        },
+        error: function () {
+          alert("업로드 오류!");
+          newWork();
+        }
+      });
+    }
+
+    /**
+    * loadWorkFileChange
+    **/
+    function onLoadWorkFileChange() {
+      if ($(this).val().length == 0) {
+        return;
+      }
+
+      var fileList = this.files;
+
+      var reader = new FileReader();
+      reader.readAsText(fileList[0]);
+
+      reader.onload = function () {
+        result = JSON.parse(reader.result);
+
+        if (Object.keys(result).length != subCnt) {
+          alert("불러온 작업의 자막 개수와 현재 작업중인 자막의 개수가 다릅니다. 올바른 파일인지 확인 바랍니다.");
+          return;
+        }
+
+        for (var i = 0; i < Object.keys(result).length; i++) {
+          var editTxtID = "sub-edit-" + i;
+          $('#' + editTxtID).val(result[i]);
+        }
+
+        alert("작업 불러오기를 완료하였습니다.");
+      }
+    }
+
+
+    /**
+    * SaveRes
+    **/
+    function SaveRes() {
+
+      if (subCnt == 0) {
+        alert("저장할 데이터가 없습니다");
+        return;
+      }
+
+      $('#savedata-pre-process').css("display", "block");
+
+      var inputs = $('[class="sub_input"]');
+
+      var resArr = new Array();
+
+      if (inputs.length > 0) {
+        for (var i = 0; i < inputs.length; i++) {
+          resArr[i] = new Object;
+          resArr[i].idx = 0;
+          resArr[i].value = inputs[i].value;
+        }
+      }
+
+      var fileValue = $("#upload-xml-file").val().split("\\");
+      var fileName = fileValue[fileValue.length - 1]; // 파일명
+      var workType = getWorkType();
+
+      var saveData = {
+        workType: workType,
+        fname: fileName,
+        saveData: JSON.stringify(resArr)
+      }
+
+      $.ajax({
+        type: "POST",
+        data: saveData,
+        url: "http://127.0.0.1:" + localPort + "/saveData",
+        success: function (res) {
+          result = JSON.parse(res);
+
+          if (result["result"] == "ERR") {
+            alert("저장중 오류가 발생하였습니다.");
+          } else if (result["result"] == "OK") {
+
+            var downUrl = "http://127.0.0.1:" + localPort + "/getResFile/" + encodeURI(result["filename"]);
+
+            $('#save-file-div').html(result["filename"] + "파일로 저장되었습니다.<br> <a id='checked-xml-download' href='" + downUrl + "' download>[다운로드 클릭!]</a>");
+            $('#save-file-div').css("display", "block");
+            $('#savedata-pre-process').css("display", "none");
+
+            $('#checked-xml-download').get(0).click();
+
+          }
+        },
+        error: function () {
+
+        }
+      });
+
+    }
+
+    /**
+    * getVer
+    **/
+    function getVer() {
+      $.ajax({
+        type: "GET",
+        url: "http://127.0.0.1:" + localPort + "/getVer",
+        success: function (res) {
+          result = JSON.parse(res);
+
+          $('#title-ver').html("피로곰's 모두의자막 v" + result["ver"]);
+
+        },
+        error: function () {
+
+        }
+      });
+    }
+
+    /**
+    * shutdown
+    **/
+    function shutdown(){
+      if( !confirm( "모두의 자막을 종료하시겠습니까?") ){
+        return;
+      }
+
+      $(window).off("beforeunload");
+
+      $.ajax({
+        type: "GET",
+        url: "http://127.0.0.1:" + localPort + "/shutdown",
+        success: function (res) {
+          window.close();
+        },
+        error: function () {
+
+        }
+      });  
+    }
+
+    /**
+    * newWork
+    **/
+    function newWork() {
+      if (confirm("기존 작업이 초기화 됩니다. 정말 새로운 작업을 시작하시겠습니까?")) {
+        $('#upload-xml-file').attr('disabled', false);
+        $('#upload-xml-file').val('');
+        $('#load-work-file').val('');
+        $('#subs-div').html("");
+        $('#on-progress-msg').css('display', 'none');
+        $('#save-file-div').css('display', 'none');
+        $('#upluad-pre-process').css("display", "none");
+
+        $('input:radio[id="work-type"]').attr('disabled', false);
+
+        subCnt = 0;
+      }
+    }
+
+    /**
+    * ReplaceAllBtn
+    **/
+    function ReplaceAllBtn() {
+      var match = $('#replace-match').val();
+      var msg = $('#replace-msg').val();
+
+      if (match.length == 0) {
+        alert("찾을 문자열을 입력하세요.");
+        return;
+      }
+      if (msg.length == 0) {
+        alert("바꿀 문자열을 입력하세요.");
+        return;
+      }
+      if (subCnt == 0) {
+        return;
+      }
+
+      var changeCnt = 0;
+      for (var i = 0; i < subCnt; i++) {
+        var editTxtID = "sub-edit-" + i;
+        var tmpVal = $('#' + editTxtID).val();
+
+        if (tmpVal.indexOf(match) != -1) {
+          tmpVal = tmpVal.replaceAll(match, msg);
+          $('#' + editTxtID).val(tmpVal);
+          changeCnt++;
+        }
+      }
+      alert("총 " + changeCnt + "개의 문자열을 변경하였습니다.");
+    }
+
+    /**
+    * SaveWork
+    **/
+    function SaveWork() {
+      if (subCnt == 0) {
+        alert("저장할 내용이 없습니다. 먼저 작업을 시작해 주세요.");
+        return;
+      }
+
+      var saveData = new Array();
+
+      for (var i = 0; i < subCnt; i++) {
+        var editTxtID = "sub-edit-" + i;
+
+        saveData[i] = new Object()
+        saveData[i] = $('#' + editTxtID).val();
+      }
+
+      var jsonData = JSON.stringify(saveData);
+
+      var fileValue = $("#upload-xml-file").val().split("\\");
+      var fnameTmp = fileValue[fileValue.length - 1].split(".")[0]; // 파일명
+      var fileName = fnameTmp + "_(작업저장).json";
+
+      var dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(jsonData);
+      $('#tmp-link').attr("href", dataUri);
+      $('#tmp-link').attr("download", fileName);
+      $('#tmp-link').get(0).click();
+    }
+
+
+    /**
+    * LoadWork
+    **/
+    function LoadWork() {
+      if (subCnt == 0) {
+        alert("적용할 자막이 없습니다. 기존에 작업하던 프리미어 XML 파일을 먼저 파일선택을 눌러 읽어주십시요.");
+        return;
+      }
+      $('#load-work-file').val('');
+      $('#load-work-file').trigger("click");
+    }
+
+    /**
+    * getWorkType
+    **/
+    function getWorkType() {
+      return $('input:radio[id="work-type"]:checked').val();
+    }
+
+    function onWorkTypeRadioChang() {
+      var checkdVal = getWorkType();
+
+      switch (checkdVal) {
+        case "app": // 프리미어 프로
+          $('#upload-xml-file').attr('accept', '.xml');
+          $('#btn-save-res').html("XML저장하기");
+          break;
+        case "fcp": // 파이널컷 프로 
+          $('#upload-xml-file').attr('accept', '.fcpxml');
+          $('#btn-save-res').html("FCPXML저장하기");
+          break;
+        case "smi": // smi
+          $('#upload-xml-file').attr('accept', '.smi');
+          $('#btn-save-res').html("SMI저장하기");
+          break;
+        case "srt": // srt
+          $('#upload-xml-file').attr('accept', '.srt');
+          $('#btn-save-res').html("SRT저장하기");
+          break;
+      }
+    }
+
+    /**
+    * Init
+    **/
+    $(function () {
+
+      /**
+      * 작업파일 열기 이벤트 
+      **/
+      $('#load-work-file').change(onLoadWorkFileChange);
+
+      /**
+      * XML, SMI, SRT 열기 이벤트
+      **/
+      $('#upload-xml-file').change(onLoadFileChange);
+
+      /**
+      * 작업 체크 박스
+      **/
+      $('input:radio[id="work-type"]').change(onWorkTypeRadioChang);
+
+      /**
+      * 창 닫기 이벤트
+      **/
+      $(window).on("beforeunload", function () {
+        return "자막수정중에 창을 닫거나 화면을 갱신하면 작업중이던 내용이 사라집니다. 계속 합니까? 피로곰은 책임 안집니다?";
+      });
+
+      /**
+      * 버전값 가져오기
+      **/
+      getVer();
+
+    });
+
+  </script>
+
+</head>
+
+<body>
+
+  <div align='center'>
+
+    <div style='width:900px;padding:20px;'>
+
+      <div id='title-ver' class='title_div'>피로곰's 모두의자막 v0.1</div>
+      <div class="btn-group btn-group-block">
+        <button class="btn" onclick='newWork();'>새 작업</button>
+        <button class="btn" onclick='SaveWork();'>작업 저장하기</button>
+        <button class="btn" onclick='LoadWork();'>작업 불러오기</button>
+        <button class="btn" id='btn-save-res' onclick='SaveRes();'>XML저장하기</button>
+        <button class="btn" onclick='openWin("https://modu-print.tistory.com");'>홈페이지</button>
+        <button class="btn btn-success"
+          onclick='openWin("https://search.naver.com/search.naver?query=%EB%A7%9E%EC%B6%A4%EB%B2%95+%EA%B2%80%EC%82%AC%EA%B8%B0");'>네이버</button>
+        <button class="btn" onclick='openWin("https://speller.cs.pusan.ac.kr/");'>나라인포테크</button>
+        <button class="btn" onclick='openWin("https://alldic.daum.net/grammar_checker.do");'>다음</button>
+        <button class="btn" onclick='shutdown();'>종료</button>
+      </div>
+
+      <table class="table">
+        <tbody>
+          <tr class="active">
+            <td><input type=text id='replace-match' class='form-input' placeholder="찾을 문자열"></td>
+            <td><input type=text id='replace-msg' class='form-input' placeholder="바꿀 문자열"></td>
+            <td><button class='btn btn-primary' style="width:100%;" onclick='ReplaceAllBtn();'>일괄변경</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <form name='upload-form' id='upload-form'>
+      <input class='form-input' type='file' id='upload-xml-file' accept=".xml">
+    </form>
+      <div class="container work_type_div">
+        <div class="columns">
+          <div class="column col-3">
+            <label class="form-checkbox"><input type="radio" name='work-type' id='work-type' value='app' checked><i
+                class="form-icon"></i>프리미어 XML</label>
+          </div>
+          <div class="column col-3">
+            <label class="form-checkbox"><input type="radio" name='work-type' id='work-type' value='fcp'><i
+                class="form-icon"></i>파이널컷
+              XML</label>
+          </div>
+          <div class="column col-3">
+            <label class="form-checkbox"><input type="radio" name='work-type' id='work-type' value='smi'><i
+                class="form-icon"></i>SMI
+              자막</label>
+          </div>
+          <div class="column col-3">
+            <label class="form-checkbox"><input type="radio" name='work-type' id='work-type' value='srt'><i
+                class="form-icon"></i>SRT
+              자막</label>
+          </div>
+        </div>
+      </div>
+
+      <div id='on-progress-msg' class='toast toast-warning' style='display:none;'>데이터 처리중입니다 ... 잠시만 기다려 주세요...</div>
+      <div id='save-file-div' class='toast toast-success' style='display:none;'>파일저장</div>
+      <div id='upluad-pre-process' class='toast toast-warning' style='display:none;'>업로드한 파일을 해석중입니다 ... 잠시만 기다려 주세요...
+      </div>
+      <div id='savedata-pre-process' class='toast toast-warning' style='display:none;'>저장파일을 처리중입니다 ... 잠시만 기다려 주세요...
+      </div>
+
+
+      <font class='red_text'>■</font>맞춤법
+      <font class='violet_text'>■</font>표준어의심
+      <font class='green_text'>■</font>띄어쓰기
+      <font class='blue_text'>■</font>통계적교정
+    </div>
+
+
+    <div id='subs-div'>
+
+    </div>
+    <p>Powered by 네이버 맞춤법 검사기 / 제작자 : 피로곰</p>
+    <p></p>
+
+  </div>
+
+  <div style='display:none;'>
+    <a href='#' id='tmp-link' download="모두의자막_작업저장.json"></a>
+    <input type=file id='load-work-file'>
+  </div>
+
+</body>
+
+</html>
