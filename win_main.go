@@ -1,3 +1,4 @@
+//go:build !darwin || windows
 // +build !darwin windows
 
 package main
@@ -19,9 +20,7 @@ var gVer = "1.2"
 
 const appIconResID = 8
 
-//
 // 콘솔 윈도우 숨기기
-//
 func hideConsole() {
 	consoleWnd := w32.GetConsoleWindow()
 	if consoleWnd == 0 {

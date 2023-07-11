@@ -100,6 +100,7 @@
     var localPort = "30999";
     var txtBlockInterval = null;
     var subCnt = 0;
+    var txtIdArray = null;
 
     /**
     * openWin
@@ -184,12 +185,21 @@
 
                     var html = "";
 
+                    txtIdArray = null;
+                    txtIdArray = new Array();
+
                     subCnt = 0;
                     for (var i = 0; i < Object.keys(result).length; i++) {
+
+                      txtIdArray[i] = new Object();
 
                       var origTxtID = "sub-orig-" + i;
                       var checkedTxtID = "sub-checked-" + i;
                       var editTxtID = "sub-edit-" + i;
+
+                      txtIdArray[i].origTxtID = origTxtID;
+                      txtIdArray[i].checkedTxtID = checkedTxtID;
+                      txtIdArray[i].editTxtID = editTxtID;
 
                       html += "<table class='sub_table'>";
                       html += "<tr>";
@@ -424,8 +434,9 @@
         return;
       }
       if (msg.length == 0) {
-        alert("바꿀 문자열을 입력하세요.");
-        return;
+        if( !confirm( "바꿀 문자열이 비어있습니다. 찾을 문자열이 삭제됩니다. 바꾸시겠습니까?") ){
+          return;
+        }
       }
       if (subCnt == 0) {
         return;
@@ -495,6 +506,9 @@
       return $('input:radio[id="work-type"]:checked').val();
     }
 
+    /**
+     * onWorkTypeRadioChang
+     */
     function onWorkTypeRadioChang() {
       var checkdVal = getWorkType();
 
@@ -515,6 +529,30 @@
           $('#upload-xml-file').attr('accept', '.srt');
           $('#btn-save-res').html("SRT저장하기");
           break;
+      }
+    }
+
+    /**
+     * AllSetSrcTxt
+     * */
+    function AllSetSrcTxt() {
+      if(!confirm("전체 수정문을 원문으로 교체합니다.")){
+        return;
+      }
+      for( var i = 0; i < txtIdArray.length; i++ ){
+        copyTxt(txtIdArray[i].origTxtID, txtIdArray[i].editTxtID)
+      }
+    }
+
+    /**
+     * AllSetEditTxt
+     **/
+    function AllSetEditTxt() {
+      if(!confirm("전체 수정문을 교정문으로 교체합니다.")){
+        return;
+      }
+      for( var i = 0; i < txtIdArray.length; i++ ){
+        copyTxt(txtIdArray[i].checkedTxtID, txtIdArray[i].editTxtID)
       }
     }
 
@@ -571,8 +609,6 @@
         <button class="btn" onclick='openWin("https://modu-print.com");'>홈페이지</button>
         <button class="btn btn-success"
           onclick='openWin("https://search.naver.com/search.naver?query=%EB%A7%9E%EC%B6%A4%EB%B2%95+%EA%B2%80%EC%82%AC%EA%B8%B0");'>네이버</button>
-        <button class="btn" onclick='openWin("https://speller.cs.pusan.ac.kr/");'>나라인포테크</button>
-        <button class="btn" onclick='openWin("https://alldic.daum.net/grammar_checker.do");'>다음</button>
         <button class="btn" onclick='shutdown();'>종료</button>
       </div>
 
@@ -582,6 +618,8 @@
             <td><input type=text id='replace-match' class='form-input' placeholder="찾을 문자열"></td>
             <td><input type=text id='replace-msg' class='form-input' placeholder="바꿀 문자열"></td>
             <td><button class='btn btn-primary' style="width:100%;" onclick='ReplaceAllBtn();'>일괄변경</button></td>
+            <td><button class='btn btn-primary' style="width:100%;" onclick='AllSetSrcTxt();'>원문으로 전체수정</button></td>
+            <td><button class='btn btn-primary' style="width:100%;" onclick='AllSetEditTxt();'>교정문으로 전체수정</button></td>
           </tr>
         </tbody>
       </table>
@@ -628,7 +666,7 @@
     </div>
 
 
-    <div id='subs-div'>
+    <div id='subs-div' style="overflow-y:auto; width:950px; height: 700px;">
 
     </div>
     <p>Powered by 네이버 맞춤법 검사기 / 제작자 : 피로곰</p>
