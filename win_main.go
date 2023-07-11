@@ -99,6 +99,7 @@ func main() {
 		openWeb("http://127.0.0.1:" + strconv.Itoa(gWebPort))
 	})
 	tray.AppendMenu("종료", func() {
+		openWeb("https://modu-print.com/category/%ec%97%85%eb%8d%b0%ec%9d%b4%ed%8a%b8/%eb%aa%a8%eb%91%90%ec%9d%98%ec%9e%90%eb%a7%89/")
 		tray.Stop()
 		os.Exit(0)
 	})
