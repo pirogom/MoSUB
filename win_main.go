@@ -16,7 +16,7 @@ import (
 	"github.com/tadvi/systray"
 )
 
-var gVer = "1.2"
+var gVer = "1.3"
 
 const appIconResID = 8
 

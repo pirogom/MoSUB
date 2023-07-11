@@ -1,3 +1,4 @@
+//go:build darwin || !windows
 // +build darwin !windows
 
 package main
@@ -8,7 +9,7 @@ import (
 	"os/exec"
 )
 
-var gVer = "1.3"
+var gVer = "1.4"
 
 func main() {
 
