@@ -2,6 +2,7 @@ package main
 
 var gWebPort = 30999
 var gIsDebug = false
+var gVer = "1.5"
 
 const (
 	SpellCheckLimit       = 300

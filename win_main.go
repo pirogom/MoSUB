@@ -16,7 +16,6 @@ import (
 	"github.com/tadvi/systray"
 )
 
-var gVer = "1.3"
 var gDiceUtil *dice
 
 const appIconResID = 8

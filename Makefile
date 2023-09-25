@@ -1,6 +1,6 @@
 clean:
+	rm -rf MOSUB.exe MOSUB_DARWIN MOSUB_DARWIN_M1
 	go clean
-
 win:
 	GOOS=windows GOARCH=386 go build -ldflags '-s -w' -o MOSUB.exe
 	
