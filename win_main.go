@@ -17,6 +17,7 @@ import (
 )
 
 var gVer = "1.3"
+var gDiceUtil *dice
 
 const appIconResID = 8
 
@@ -57,6 +58,7 @@ func checkMutex() bool {
 }
 
 func main() {
+	gDiceUtil = newDice()
 	fixWorkingDirectory()
 
 	// 중복실행 방지

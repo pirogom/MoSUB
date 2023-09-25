@@ -176,7 +176,7 @@ func finalcutXMLProc(xmlString string, fname string) int {
 			if len(subText) > 0 {
 				txtCnt++
 
-				if len(oneTxtBlock)+len(subText)+len("\r\n") < 500 {
+				if len(oneTxtBlock)+len(subText)+len("\r\n") < SpellCheckLimit {
 					oneTxtBlock += subText + "\r\n"
 				} else {
 
@@ -197,7 +197,7 @@ func finalcutXMLProc(xmlString string, fname string) int {
 							if len(subText) > 0 {
 								txtCnt++
 
-								if len(oneTxtBlock)+len(subText)+len("\r\n") < 500 {
+								if len(oneTxtBlock)+len(subText)+len("\r\n") < SpellCheckLimit {
 									oneTxtBlock += subText + "\r\n"
 								} else {
 

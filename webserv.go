@@ -123,7 +123,7 @@ func decodeGzip(data []byte) ([]byte, error) {
 **/
 func getSpellCheck(origTxt string) ([]byte, error) {
 	encodeTxt := url.QueryEscape(origTxt)
-	reqURL := fmt.Sprintf("https://m.search.naver.com/p/csearch/ocontent/util/SpellerProxy?_callback=%s&q=%s&where=nexearch&color_blindness=0&_=%d", getJQCallback(), encodeTxt, getJQReqDummy())
+	reqURL := fmt.Sprintf("https://m.search.naver.com/p/csearch/ocontent/util/SpellerProxy?passportKey=%s&_callback=%s&q=%s&where=nexearch&color_blindness=0&_=%d", SpellCheckPassportKey, getJQCallback(), encodeTxt, getJQReqDummy())
 
 	request, rerr := http.NewRequest("GET", reqURL, nil)
 
@@ -137,10 +137,9 @@ func getSpellCheck(origTxt string) ([]byte, error) {
 	//	request.Header.Set("Cookie", getCookies())
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
-	request.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
+	request.Header.Set("user-agent", SpellCheckUserAgent)
 	request.Header.Set("x-accept-language", "ko-KR")
-	request.Header.Set("referer", "https://search.naver.com/search.naver?sm=top_hty&fbm=1&ie=utf8&query=%EB%84%A4%EC%9D%B4%EB%B2%84+%EB%A7%9E%EC%B6%A4%EB%B2%95+%EA%B2%80%EC%82%AC%EA%B8%B0")
-
+	request.Header.Set("referer", SpellCheckReferer)
 	//
 
 	client := &http.Client{}
@@ -196,7 +195,7 @@ func spellCheckProc(tm map[int]string, fname string) {
 			}
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(time.Duration(500+gDiceUtil.randNumber(1, 500)) * time.Millisecond)
 	}
 
 	//	var tmpfbuf string

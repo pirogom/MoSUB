@@ -101,7 +101,7 @@ func srtSUBProc(srtString string, fname string) int {
 		for si := 0; si < len(smip.subs); si++ {
 			txtCnt++
 
-			if len(oneTxtBlock)+len(smip.subs[si].Text)+len("\r\n") < 500 {
+			if len(oneTxtBlock)+len(smip.subs[si].Text)+len("\r\n") < SpellCheckLimit {
 				oneTxtBlock += smip.subs[si].Text + "\r\n"
 			} else {
 				txtBlockMap[txtBlockCnt] = oneTxtBlock

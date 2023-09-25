@@ -172,7 +172,7 @@ func smiSUBProc(smiString string, fname string) int {
 			if strings.Index(smip.subs[si].Text, "&nbsp") == -1 {
 				txtCnt++
 
-				if len(oneTxtBlock)+len(smip.subs[si].Text)+len("\r\n") < 500 {
+				if len(oneTxtBlock)+len(smip.subs[si].Text)+len("\r\n") < SpellCheckLimit {
 					oneTxtBlock += smip.subs[si].Text + "\r\n"
 				} else {
 					txtBlockMap[txtBlockCnt] = oneTxtBlock

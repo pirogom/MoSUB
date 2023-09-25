@@ -10,8 +10,11 @@ import (
 )
 
 var gVer = "1.4"
+var gDiceUtil *dice
 
 func main() {
+
+	gDiceUtil = newDice()
 
 	fixWorkingDirectory()
 

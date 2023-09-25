@@ -282,7 +282,7 @@ func premiereXMLProc(xmlString string, fname string) int {
 
 						txtCnt++
 
-						if len(oneTxtBlock)+len(epitem.Value.Text)+len("\r\n") < 500 {
+						if len(oneTxtBlock)+len(epitem.Value.Text)+len("\r\n") < SpellCheckLimit {
 							oneTxtBlock += epitem.Value.Text + "\r\n"
 						} else {
 							txtBlockMap[txtBlockCnt] = oneTxtBlock
