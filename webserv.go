@@ -234,6 +234,10 @@ func getSpellCheck(origTxt string, passportKey string) ([]byte, error) {
 *	spellCheckProc
 **/
 func spellCheckProc(tm map[int]string, fname string, passportKey string) {
+	defer debug.FreeOSMemory()
+
+	resfname := workFilepath(fname) + ".tmp"
+	os.Remove(resfname)
 
 	origm := make(map[int]string)
 	htmlm := make(map[int]string)
@@ -254,9 +258,14 @@ func spellCheckProc(tm map[int]string, fname string, passportKey string) {
 				htmlm[k] = so.Message.Result.HTML
 				origm[k] = so.Message.Result.OriginHTML
 			} else {
-				fmt.Println(jerr.Error())
+				os.WriteFile(resfname, []byte("MOSUB_SPELL_JSON_ERROR"), 0644)
+				return
 			}
+		} else {
+			os.WriteFile(resfname, []byte("MOSUB_SPELL_CHECK_ERROR"), 0644)
+			return
 		}
+
 		time.Sleep(500 * time.Millisecond)
 	}
 
@@ -268,7 +277,8 @@ func spellCheckProc(tm map[int]string, fname string, passportKey string) {
 		htmlsp := strings.Split(htmlm[i], "<br>")
 
 		if len(origsp) != len(htmlsp) {
-			fmt.Println("결과처리 오류1")
+			os.WriteFile(resfname, []byte("MOSUB_RESULT_DIFF_ERROR"), 0644)
+			return
 		} else {
 			for ri := 0; ri < len(origsp); ri++ {
 				var ospres spellResult
@@ -282,20 +292,20 @@ func spellCheckProc(tm map[int]string, fname string, passportKey string) {
 			}
 		}
 	}
-	resfname := workFilepath(fname) + ".tmp"
-	os.Remove(resfname)
 
 	if len(resJSON) > 0 {
 		resJSONBuf, resJSONBufErr := json.Marshal(&resJSON)
 
 		if resJSONBufErr == nil {
 			os.WriteFile(resfname, resJSONBuf, 0644)
+		} else {
+			os.WriteFile(resfname, []byte("MOSUB_JSON_ERROR"), 0644)
+			return
 		}
 	} else {
 		os.WriteFile(resfname, []byte("MOSUB_RESULT_IS_EMPTY"), 0644)
+		return
 	}
-
-	debug.FreeOSMemory()
 }
 
 /**

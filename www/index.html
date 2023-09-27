@@ -175,8 +175,30 @@
                 url: "http://127.0.0.1:" + localPort + "/getResult",
                 success: function (res) {
 
-                  if( res == "MOSUB_RESULT_IS_EMPTY") {
-                    alert("자막 처리 결과가 없습니다. 과도한 요청에 의한 일시적인 문제일 수 있습니다. 잠시후 다시 시도바랍니다.");
+                  var hasGetResultErr = false
+                  switch( res ){
+                    case "MOSUB_SPELL_JSON_ERROR":
+                      alert("맞춤법 검사 JSON 파싱 오류");
+                      hasGetResultErr = true;
+                      break;
+                    case "MOSUB_SPELL_CHECK_ERROR":
+                      alert("네이버 맞춤법 검사 오류");
+                      hasGetResultErr = true;
+                      break;
+                    case "MOSUB_RESULT_DIFF_ERROR":
+                      alert("원문, 교정문 갯수가 일지하지 않습니다.");
+                      hasGetResultErr = true;
+                      break;
+                    case "MOSUB_JSON_ERROR":
+                      alert("결과 JSON 오류");
+                      hasGetResultErr = true;
+                      break;
+                    case "MOSUB_RESULT_IS_EMPTY":
+                      alert("자막 처리 결과가 없습니다.");
+                      hasGetResultErr = true;
+                      break;
+                  }
+                  if( hasGetResultErr === true ) {
                     $('#on-progress-msg').css('display', 'none');
                     clearInterval(txtBlockInterval);
                     txtBlockInterval = null;
