@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	strip "github.com/grokify/html-strip-tags-go"
@@ -158,7 +158,7 @@ func (d *smiParser) getResult() string {
 /**
 *	SMI  업로드 파일 처리
 **/
-func smiSUBProc(smiString string, fname string) int {
+func smiSUBProc(smiString string, fname string, passportKey string) int {
 	smip, smipErr := newSMIParser(smiString)
 
 	txtBlockMap := make(map[int]string)
@@ -186,7 +186,7 @@ func smiSUBProc(smiString string, fname string) int {
 		txtBlockMap[txtBlockCnt] = oneTxtBlock
 
 		if txtCnt > 0 {
-			go spellCheckProc(txtBlockMap, fname)
+			go spellCheckProc(txtBlockMap, fname, passportKey)
 		}
 	}
 
@@ -208,7 +208,7 @@ func saveSmiSUBData(data string, fname string, savefname string) map[string]stri
 		ret["result"] = "ERR"
 	} else {
 		//
-		oldSmiData, oldSmiDataErr := ioutil.ReadFile(workFilepath(fname))
+		oldSmiData, oldSmiDataErr := os.ReadFile(workFilepath(fname))
 
 		if oldSmiDataErr != nil {
 			ret["result"] = "ERR"
@@ -229,7 +229,7 @@ func saveSmiSUBData(data string, fname string, savefname string) map[string]stri
 					}
 				}
 
-				werr := ioutil.WriteFile(workFilepath(savefname), []byte(smip.getResult()), 0644)
+				werr := os.WriteFile(workFilepath(savefname), []byte(smip.getResult()), 0644)
 
 				if werr != nil {
 					ret["result"] = "ERR"

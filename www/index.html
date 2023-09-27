@@ -16,7 +16,7 @@
   <style>
     .sub_table {
       border: 0px;
-      width: 900px;
+      width: 95%;
       background-color: #e3e3e3;
       padding: 3px;
       margin-top: 5px;
@@ -163,6 +163,7 @@
             $('#on-progress-msg').html("총 " + result["TXTCNT"] + "개의 자막을 처리중입니다.. 잠시만 기다려주십시요..");
             $('#on-progress-msg').css('display', 'block');
 
+            var retryCount = 0;
             txtBlockInterval = setInterval(function () {
               var getData = {
                 resfile: resfName
@@ -174,14 +175,51 @@
                 url: "http://127.0.0.1:" + localPort + "/getResult",
                 success: function (res) {
 
-                  if (res.length == 0) {
-                    //                        alert("결과 값이 없습니다")
-                  } else {
+                  if( res == "MOSUB_RESULT_IS_EMPTY") {
+                    alert("자막 처리 결과가 없습니다. 과도한 요청에 의한 일시적인 문제일 수 있습니다. 잠시후 다시 시도바랍니다.");
                     $('#on-progress-msg').css('display', 'none');
                     clearInterval(txtBlockInterval);
                     txtBlockInterval = null;
+                    newWork();
+                    return;
+                  }
 
+                  if (res.length == 0) {
+                    //console.log("데이터 없음");
+
+                    retryCount++;
+                    $('#on-progress-msg').html("자막을 처리하는 중입니다..잠시만 기다려주세요.(체크 횟수:" + retryCount + "/최대180회,3분)");
+
+                    if( retryCount > 180 ){
+                      $('#on-progress-msg').css('display', 'none');
+                      clearInterval(txtBlockInterval);
+                      txtBlockInterval = null;
+                      alert("자막 처리 과정에 문제가 있는것 같습니다. 작업을 초기화 합니다.");
+                      newWork();
+                      return;
+                    }
+
+                  } else {
                     result = JSON.parse(res);
+
+                    if( result == null || result == undefined ){
+                      retryCount++;
+                      $('#on-progress-msg').html("자막을 처리하는 중입니다..잠시만 기다려주세요.(체크 횟수:" + retryCount + "/최대180회,3분)");
+
+                      if( retryCount > 180 ){
+                        $('#on-progress-msg').css('display', 'none');
+                        clearInterval(txtBlockInterval);
+                        txtBlockInterval = null;
+                        alert("자막 처리 과정에 문제가 있는것 같습니다. 작업을 초기화 합니다.");
+                        newWork();
+                        return;
+                      }
+                      return;
+                    }
+
+                    $('#on-progress-msg').css('display', 'none');
+                    clearInterval(txtBlockInterval);
+                    txtBlockInterval = null;
 
                     var html = "";
 
@@ -556,6 +594,24 @@
       }
     }
 
+    function ResetSubWidth(addValue) {
+      currWidth = $('#subs-div').width();
+      currWidth += addValue;
+      if( currWidth < 950 ){
+        currWidth = 950;
+      }
+      $('#subs-div').width(currWidth);
+    }
+
+    function ResetSubHeight(addValue) {
+      currHeight = $('#subs-div').height();
+      currHeight += addValue;
+      if( currHeight < 300 ){
+        currHeight = 300;
+      }
+      $('#subs-div').height(currHeight);
+    }
+
     /**
     * Init
     **/
@@ -618,11 +674,23 @@
             <td><input type=text id='replace-match' class='form-input' placeholder="찾을 문자열"></td>
             <td><input type=text id='replace-msg' class='form-input' placeholder="바꿀 문자열"></td>
             <td><button class='btn btn-primary' style="width:100%;" onclick='ReplaceAllBtn();'>일괄변경</button></td>
-            <td><button class='btn btn-primary' style="width:100%;" onclick='AllSetSrcTxt();'>원문으로 전체수정</button></td>
-            <td><button class='btn btn-primary' style="width:100%;" onclick='AllSetEditTxt();'>교정문으로 전체수정</button></td>
           </tr>
         </tbody>
       </table>
+
+      <table class="table">
+        <tbody>
+        <tr class="active">
+          <td><button class='btn btn-primary' style="width:100%;" onclick='AllSetSrcTxt();'>원문으로 전체수정</button></td>
+          <td><button class='btn btn-primary' style="width:100%;" onclick='AllSetEditTxt();'>교정문으로 전체수정</button></td>
+          <td><button class='btn btn-primary' style="width:100%;" onclick='ResetSubWidth(150);'>폭+</button></td>
+          <td><button class='btn btn-primary' style="width:100%;" onclick='ResetSubWidth(-150);'>폭-</button></td>
+          <td><button class='btn btn-primary' style="width:100%;" onclick='ResetSubHeight(150);'>높이+</button></td>
+          <td><button class='btn btn-primary' style="width:100%;" onclick='ResetSubHeight(-150);'>높이-</button></td>
+        </tr>
+        </tbody>
+      </table>
+
 
       <form name='upload-form' id='upload-form'>
       <input class='form-input' type='file' id='upload-xml-file' accept=".xml">
@@ -666,7 +734,7 @@
     </div>
 
 
-    <div id='subs-div' style="overflow-y:auto; width:950px; height: 700px;">
+    <div id='subs-div' style="overflow-y:auto; width:950px; height: 500px;">
 
     </div>
     <p>Powered by 네이버 맞춤법 검사기 / 제작자 : 피로곰</p>

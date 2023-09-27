@@ -10,7 +10,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -111,19 +111,80 @@ func decodeGzip(data []byte) ([]byte, error) {
 	// Write gzipped data to the client
 	gr, err := gzip.NewReader(bytes.NewBuffer(data))
 	defer gr.Close()
-	data, err = ioutil.ReadAll(gr)
+	data, err = io.ReadAll(gr)
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
+func getPassportKey() (string, error) {
+	reqURL := "https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=%EB%A7%9E%EC%B6%A4%EB%B2%95%EA%B2%80%EC%82%AC%EA%B8%B0"
+	request, rerr := http.NewRequest("GET", reqURL, nil)
+
+	if rerr != nil {
+		return "", rerr
+	}
+
+	request.Header.Set("accept", "application/json, text/plain, */*")
+	request.Header.Set("accept-encoding", "gzip, deflate, br")
+	request.Header.Set("accept-language", "en-US,en;q=0.9,ko;q=0.8")
+	request.Header.Set("sec-fetch-mode", "cors")
+	request.Header.Set("sec-fetch-site", "same-origin")
+	request.Header.Set("user-agent", SpellCheckUserAgent)
+	request.Header.Set("x-accept-language", "ko-KR")
+	request.Header.Set("referer", "https://www.naver.com/")
+	//
+
+	client := &http.Client{}
+	resp, respErr := client.Do(request)
+
+	if respErr != nil {
+		return "", respErr
+	}
+	defer resp.Body.Close()
+
+	contentEncoding := resp.Header.Get("content-encoding")
+
+	htmlBuf, htmlErr := io.ReadAll(resp.Body)
+
+	var htmlString string
+
+	if htmlErr == nil {
+		if contentEncoding == "gzip" {
+			decodeBuf, decodeErr := decodeGzip(htmlBuf)
+
+			if decodeErr == nil {
+				htmlString = string(decodeBuf)
+			}
+		} else {
+			htmlString = string(htmlBuf)
+		}
+	}
+
+	if htmlString == "" {
+		return htmlString, errors.New("html string is empty")
+	}
+
+	startIdx := strings.Index(htmlString, "passportKey=")
+	if startIdx != -1 {
+		keyLen := len("passportKey=")
+		valLen := len("be30476cb810c4f8c1d27ba0c771e8f063b42cf4")
+		passportKey := htmlString[startIdx+keyLen : startIdx+keyLen+valLen]
+		return passportKey, nil
+	} else {
+		return "", errors.New("passportKey not found")
+	}
+
+	return "", errors.New("passportKey not found")
+}
+
 /**
 *	getSpellCheck
 **/
-func getSpellCheck(origTxt string) ([]byte, error) {
+func getSpellCheck(origTxt string, passportKey string) ([]byte, error) {
 	encodeTxt := url.QueryEscape(origTxt)
-	reqURL := fmt.Sprintf("https://m.search.naver.com/p/csearch/ocontent/util/SpellerProxy?passportKey=%s&_callback=%s&q=%s&where=nexearch&color_blindness=0&_=%d", SpellCheckPassportKey, getJQCallback(), encodeTxt, getJQReqDummy())
+	reqURL := fmt.Sprintf("https://m.search.naver.com/p/csearch/ocontent/util/SpellerProxy?passportKey=%s&_callback=%s&q=%s&where=nexearch&color_blindness=0&_=%d", passportKey, getJQCallback(), encodeTxt, getJQReqDummy())
 
 	request, rerr := http.NewRequest("GET", reqURL, nil)
 
@@ -152,7 +213,7 @@ func getSpellCheck(origTxt string) ([]byte, error) {
 
 	contentEncoding := resp.Header.Get("content-encoding")
 
-	htmlBuf, htmlErr := ioutil.ReadAll(resp.Body)
+	htmlBuf, htmlErr := io.ReadAll(resp.Body)
 
 	if htmlErr == nil {
 		if contentEncoding == "gzip" {
@@ -172,14 +233,14 @@ func getSpellCheck(origTxt string) ([]byte, error) {
 /**
 *	spellCheckProc
 **/
-func spellCheckProc(tm map[int]string, fname string) {
+func spellCheckProc(tm map[int]string, fname string, passportKey string) {
 
 	origm := make(map[int]string)
 	htmlm := make(map[int]string)
 
 	for k, v := range tm {
 
-		buf, bufErr := getSpellCheck(v)
+		buf, bufErr := getSpellCheck(v, passportKey)
 
 		if bufErr == nil {
 			rmjq := strings.Replace(string(buf), getJQCallback()+"(", "", -1)
@@ -192,10 +253,11 @@ func spellCheckProc(tm map[int]string, fname string) {
 			if jerr == nil {
 				htmlm[k] = so.Message.Result.HTML
 				origm[k] = so.Message.Result.OriginHTML
+			} else {
+				fmt.Println(jerr.Error())
 			}
 		}
-
-		time.Sleep(time.Duration(500+gDiceUtil.randNumber(1, 500)) * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	//	var tmpfbuf string
@@ -220,14 +282,17 @@ func spellCheckProc(tm map[int]string, fname string) {
 			}
 		}
 	}
+	resfname := workFilepath(fname) + ".tmp"
+	os.Remove(resfname)
 
-	resJSONBuf, resJSONBufErr := json.Marshal(&resJSON)
+	if len(resJSON) > 0 {
+		resJSONBuf, resJSONBufErr := json.Marshal(&resJSON)
 
-	if resJSONBufErr == nil {
-		resfname := workFilepath(fname) + ".tmp"
-		os.Remove(resfname)
-
-		ioutil.WriteFile(resfname, resJSONBuf, 0644)
+		if resJSONBufErr == nil {
+			os.WriteFile(resfname, resJSONBuf, 0644)
+		}
+	} else {
+		os.WriteFile(resfname, []byte("MOSUB_RESULT_IS_EMPTY"), 0644)
 	}
 
 	debug.FreeOSMemory()
@@ -263,7 +328,6 @@ func removeFinalcutXMLIndent(origXML string) string {
 *	uploadXML
 **/
 func uploadXML(w http.ResponseWriter, r *http.Request) {
-
 	r.ParseMultipartForm(4096)
 
 	defer func() {
@@ -271,6 +335,12 @@ func uploadXML(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if clientIsLocalHost(w, r) == false {
+		return
+	}
+	initJQuery()
+	passportKey, pkErr := getPassportKey()
+
+	if pkErr != nil {
 		return
 	}
 
@@ -281,34 +351,33 @@ func uploadXML(w http.ResponseWriter, r *http.Request) {
 
 	if upfileErr == nil {
 
-		ufr, ufrErr := ioutil.ReadAll(upfile)
+		ufr, ufrErr := io.ReadAll(upfile)
 
 		if ufrErr == nil {
 			fname := upfileHeader.Filename
 			os.Remove(workFilepath(fname))
-			ioutil.WriteFile(workFilepath(fname), ufr, 0644)
+			os.Remove(workFilepath(fname) + ".tmp")
+			os.WriteFile(workFilepath(fname), ufr, 0644)
 
 			xmlBuf, xmlBufErr := getUTF8bufferFile(workFilepath(fname))
 
 			if xmlBufErr == nil {
 				switch workType {
 				case "app": // 프리미어 프로
-					txtCnt = premiereXMLProc(string(xmlBuf), fname)
+					txtCnt = premiereXMLProc(string(xmlBuf), fname, passportKey)
 					break
 				case "fcp": // 파이널 컷
-					txtCnt = finalcutXMLProc(string(xmlBuf), fname)
+					txtCnt = finalcutXMLProc(string(xmlBuf), fname, passportKey)
 					break
 				case "smi": // smi
-					txtCnt = smiSUBProc(string(xmlBuf), fname)
+					txtCnt = smiSUBProc(string(xmlBuf), fname, passportKey)
 					break
 				case "srt": // srt
-					txtCnt = srtSUBProc(string(xmlBuf), fname)
+					txtCnt = srtSUBProc(string(xmlBuf), fname, passportKey)
 					break
 				}
 			}
-
 		}
-
 	}
 
 	rd := make(map[string]string)
@@ -342,7 +411,7 @@ func getResult(w http.ResponseWriter, r *http.Request) {
 
 	resfname := r.Form.Get("resfile")
 
-	readBuf, readErr := ioutil.ReadFile(workFilepath(resfname))
+	readBuf, readErr := os.ReadFile(workFilepath(resfname))
 
 	if readErr != nil {
 		return

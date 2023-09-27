@@ -3,20 +3,21 @@ package main
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
+	"os"
 
 	"golang.org/x/net/html/charset"
 )
 
-//   "utf-8":               utf8,
-//   "utf8":                utf8,
-//   "utf-16be":            utf16be,
-//   "utf-16le":            utf16le,
-//   "euc-kr":              euckr,
+// "utf-8":               utf8,
+// "utf8":                utf8,
+// "utf-16be":            utf16be,
+// "utf-16le":            utf16le,
+// "euc-kr":              euckr,
 func convToUTF8(strBytes []byte, origEncoding string) []byte {
 	byteReader := bytes.NewReader(strBytes)
 	reader, _ := charset.NewReaderLabel(origEncoding, byteReader)
-	strBytes, _ = ioutil.ReadAll(reader)
+	strBytes, _ = io.ReadAll(reader)
 	return strBytes
 }
 
@@ -42,7 +43,7 @@ func getUTF8buffer(rs []byte) []byte {
 *   getUTF8bufferFile
 **/
 func getUTF8bufferFile(fname string) ([]byte, error) {
-	buf, err := ioutil.ReadFile(fname)
+	buf, err := os.ReadFile(fname)
 
 	if err != nil {
 		return nil, err

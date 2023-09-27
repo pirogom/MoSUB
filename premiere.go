@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"encoding/xml"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -254,7 +254,7 @@ func replacePremiereXMLSpecialCharacter(origXML string) string {
 /**
 *	프리미어 업로드 파일 처리
 **/
-func premiereXMLProc(xmlString string, fname string) int {
+func premiereXMLProc(xmlString string, fname string, passportKey string) int {
 	xmlString = removePremiereXMLIndent(xmlString)
 
 	var xmlData premiereXML
@@ -297,7 +297,7 @@ func premiereXMLProc(xmlString string, fname string) int {
 		txtBlockMap[txtBlockCnt] = oneTxtBlock
 
 		if txtCnt > 0 {
-			go spellCheckProc(txtBlockMap, fname)
+			go spellCheckProc(txtBlockMap, fname, passportKey)
 		}
 	}
 
@@ -319,7 +319,7 @@ func savePremiereData(data string, fname string, savefname string) map[string]st
 		ret["result"] = "ERR"
 	} else {
 		//
-		oldXMLFileData, oldXMLFileDataErr := ioutil.ReadFile(workFilepath(fname))
+		oldXMLFileData, oldXMLFileDataErr := os.ReadFile(workFilepath(fname))
 
 		if oldXMLFileDataErr != nil {
 			ret["result"] = "ERR"
@@ -362,7 +362,7 @@ func savePremiereData(data string, fname string, savefname string) map[string]st
 
 					replaceXML := replacePremiereXMLSpecialCharacter(string(xmlMarData))
 
-					werr := ioutil.WriteFile(workFilepath(savefname), []byte(replaceXML), 0644)
+					werr := os.WriteFile(workFilepath(savefname), []byte(replaceXML), 0644)
 
 					if werr != nil {
 						ret["result"] = "ERR"

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	strip "github.com/grokify/html-strip-tags-go"
@@ -88,7 +88,7 @@ func (d *srtParser) getResult() string {
 /**
 *	SRT  업로드 파일 처리
 **/
-func srtSUBProc(srtString string, fname string) int {
+func srtSUBProc(srtString string, fname string, passportKey string) int {
 	smip, smipErr := newSRTParser(srtString)
 
 	txtBlockMap := make(map[int]string)
@@ -114,7 +114,7 @@ func srtSUBProc(srtString string, fname string) int {
 		txtBlockMap[txtBlockCnt] = oneTxtBlock
 
 		if txtCnt > 0 {
-			go spellCheckProc(txtBlockMap, fname)
+			go spellCheckProc(txtBlockMap, fname, passportKey)
 		}
 	}
 
@@ -136,7 +136,7 @@ func saveSrtSUBData(data string, fname string, savefname string) map[string]stri
 		ret["result"] = "ERR"
 	} else {
 		//
-		oldSrtData, oldSrtDataErr := ioutil.ReadFile(workFilepath(fname))
+		oldSrtData, oldSrtDataErr := os.ReadFile(workFilepath(fname))
 
 		if oldSrtDataErr != nil {
 			ret["result"] = "ERR"
@@ -155,7 +155,7 @@ func saveSrtSUBData(data string, fname string, savefname string) map[string]stri
 					txtCnt++
 				}
 
-				werr := ioutil.WriteFile(workFilepath(savefname), []byte(smip.getResult()), 0644)
+				werr := os.WriteFile(workFilepath(savefname), []byte(smip.getResult()), 0644)
 
 				if werr != nil {
 					ret["result"] = "ERR"

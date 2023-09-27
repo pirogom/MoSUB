@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -155,7 +155,7 @@ func replaceFinalcutXMLSpecialCharacter(origXML string) string {
 /**
 *	finalcutXMLProc
 **/
-func finalcutXMLProc(xmlString string, fname string) int {
+func finalcutXMLProc(xmlString string, fname string, passportKey string) int {
 	xmlString = removeFinalcutXMLIndent(xmlString)
 
 	var xmlData finalcutXMLObj
@@ -214,7 +214,7 @@ func finalcutXMLProc(xmlString string, fname string) int {
 		txtBlockMap[txtBlockCnt] = oneTxtBlock
 
 		if txtCnt > 0 {
-			go spellCheckProc(txtBlockMap, fname)
+			go spellCheckProc(txtBlockMap, fname, passportKey)
 		}
 	}
 
@@ -236,7 +236,7 @@ func saveFinalcutData(data string, fname string, savefname string) map[string]st
 		ret["result"] = "ERR"
 	} else {
 		//
-		oldXMLFileData, oldXMLFileDataErr := ioutil.ReadFile(workFilepath(fname))
+		oldXMLFileData, oldXMLFileDataErr := os.ReadFile(workFilepath(fname))
 
 		if oldXMLFileDataErr != nil {
 			ret["result"] = "ERR"
@@ -284,7 +284,7 @@ func saveFinalcutData(data string, fname string, savefname string) map[string]st
 				} else {
 					replaceXML := replaceFinalcutXMLSpecialCharacter(string(xmlMarData))
 
-					werr := ioutil.WriteFile(workFilepath(savefname), []byte(replaceXML), 0644)
+					werr := os.WriteFile(workFilepath(savefname), []byte(replaceXML), 0644)
 
 					if werr != nil {
 						ret["result"] = "ERR"
